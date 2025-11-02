@@ -1,0 +1,34 @@
+# RocksDB point query benchmark (hash index on/off)
+# Sun Nov  2 02:48:51 UTC 2025
+# key_size=8, value_size=8, reads=1000000
+
+
+### use_data_block_hash_index=0, restart_interval=1, cache_size=2147483648, num_keys=30000000
+readrandom   :      29.767 micros/op 33594 ops/sec 120.019 seconds 4031999 operations;    0.5 MB/s (4031999 of 4031999 found)
+
+### use_data_block_hash_index=1, restart_interval=1, cache_size=2147483648, num_keys=30000000
+readrandom   :      33.561 micros/op 29796 ops/sec 120.049 seconds 3576999 operations;    0.5 MB/s (3576999 of 3576999 found)
+
+### use_data_block_hash_index=0, restart_interval=2, cache_size=2147483648, num_keys=30000000
+readrandom   :      20.433 micros/op 48940 ops/sec 120.024 seconds 5873999 operations;    0.7 MB/s (5873999 of 5873999 found)
+
+### use_data_block_hash_index=1, restart_interval=2, cache_size=2147483648, num_keys=30000000
+readrandom   :      24.653 micros/op 40563 ops/sec 120.009 seconds 4867999 operations;    0.6 MB/s (4867999 of 4867999 found)
+
+### use_data_block_hash_index=0, restart_interval=4, cache_size=2147483648, num_keys=30000000
+readrandom   :      24.002 micros/op 41663 ops/sec 120.057 seconds 5001999 operations;    0.6 MB/s (5001999 of 5001999 found)
+
+### use_data_block_hash_index=1, restart_interval=4, cache_size=2147483648, num_keys=30000000
+readrandom   :      22.930 micros/op 43611 ops/sec 120.014 seconds 5233999 operations;    0.7 MB/s (5233999 of 5233999 found)
+
+### use_data_block_hash_index=0, restart_interval=8, cache_size=2147483648, num_keys=30000000
+readrandom   :      19.244 micros/op 51964 ops/sec 120.004 seconds 6235999 operations;    0.8 MB/s (6235999 of 6235999 found)
+
+### use_data_block_hash_index=1, restart_interval=8, cache_size=2147483648, num_keys=30000000
+readrandom   :      12.353 micros/op 80950 ops/sec 120.012 seconds 9714999 operations;    1.2 MB/s (9714999 of 9714999 found)
+
+### use_data_block_hash_index=0, restart_interval=16, cache_size=2147483648, num_keys=30000000
+readrandom   :      19.110 micros/op 52329 ops/sec 120.009 seconds 6279999 operations;    0.8 MB/s (6279999 of 6279999 found)
+
+### use_data_block_hash_index=1, restart_interval=16, cache_size=2147483648, num_keys=30000000
+readrandom   :      15.008 micros/op 66632 ops/sec 120.002 seconds 7995999 operations;    1.0 MB/s (7995999 of 7995999 found)

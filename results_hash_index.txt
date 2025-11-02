@@ -1,28 +1,10 @@
 # RocksDB point query benchmark (hash index on/off)
-# Mon Oct 27 01:59:44 UTC 2025
-# value_size=100, reads=1000000
+# Sun Nov  2 00:01:05 UTC 2025
+# key_size=8, value_size=8, reads=1000000
 
 
-### cache_size=16777216, use_data_block_hash_index=false, num_keys=96420
-readrandom   :       1.621 micros/op 2467543 ops/sec 60.001 seconds 148055996 operations;   26.3 MB/s (3568819 of 37031999 found)
+### cache_size=2147483648, use_data_block_hash_index=0, num_keys=30000000
+readrandom   :      18.449 micros/op 54204 ops/sec 120.008 seconds 6504999 operations;    0.8 MB/s (6504999 of 6504999 found)
 
-### cache_size=16777216, use_data_block_hash_index=true, num_keys=96420
-readrandom   :       1.761 micros/op 2270985 ops/sec 60.001 seconds 136261996 operations;   24.2 MB/s (3290445 of 34145999 found)
-
-### cache_size=33554432, use_data_block_hash_index=false, num_keys=192841
-readrandom   :       1.660 micros/op 2409158 ops/sec 60.001 seconds 144552996 operations;   51.4 MB/s (6973305 of 36152999 found)
-
-### cache_size=33554432, use_data_block_hash_index=true, num_keys=192841
-readrandom   :       1.559 micros/op 2565513 ops/sec 60.001 seconds 153933996 operations;   54.7 MB/s (7389557 of 38305999 found)
-
-### cache_size=67108864, use_data_block_hash_index=false, num_keys=385683
-readrandom   :       1.642 micros/op 2436712 ops/sec 60.001 seconds 146205996 operations;  104.0 MB/s (14092172 of 36537999 found)
-
-### cache_size=67108864, use_data_block_hash_index=true, num_keys=385683
-readrandom   :       1.514 micros/op 2642350 ops/sec 60.001 seconds 158544996 operations;  112.8 MB/s (15314948 of 39706999 found)
-
-### cache_size=134217728, use_data_block_hash_index=false, num_keys=771366
-readrandom   :       2.702 micros/op 1480423 ops/sec 60.002 seconds 88828996 operations;  126.3 MB/s (17177297 of 22264999 found)
-
-### cache_size=134217728, use_data_block_hash_index=true, num_keys=771366
-readrandom   :       2.581 micros/op 1549864 ops/sec 60.002 seconds 92994996 operations;  132.3 MB/s (17940776 of 23254999 found)
+### cache_size=2147483648, use_data_block_hash_index=1, num_keys=30000000
+readrandom   :      15.426 micros/op 64826 ops/sec 120.012 seconds 7779999 operations;    1.0 MB/s (7779999 of 7779999 found)
