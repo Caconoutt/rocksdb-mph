@@ -197,6 +197,7 @@ cpp_library_wrapper(name="rocksdb_lib", srcs=[
         "table/block_based/block_prefix_index.cc",
         "table/block_based/data_block_footer.cc",
         "table/block_based/data_block_hash_index.cc",
+        "table/block_based/data_block_mph_index.cc",
         "table/block_based/filter_block_reader_common.cc",
         "table/block_based/filter_policy.cc",
         "table/block_based/flush_block_policy.cc",

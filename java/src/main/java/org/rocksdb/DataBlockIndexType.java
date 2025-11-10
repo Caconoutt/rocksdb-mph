@@ -20,6 +20,11 @@ public enum DataBlockIndexType {
    */
   kDataBlockBinaryAndHash((byte)0x1);
 
+  /**
+   * additional minimal perfect hashing index
+   */
+  kDataBlockBinaryAndMPHash((byte)0x2);
+
   private final byte value;
 
   DataBlockIndexType(final byte value) {

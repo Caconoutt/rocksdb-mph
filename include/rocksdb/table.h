@@ -267,6 +267,7 @@ struct BlockBasedTableOptions {
   enum DataBlockIndexType : char {
     kDataBlockBinarySearch = 0,   // traditional block type
     kDataBlockBinaryAndHash = 1,  // additional hash index
+    kDataBlockBinaryAndMPHash = 2,  // minimal perfect hashing
   };
 
   DataBlockIndexType data_block_index_type = kDataBlockBinarySearch;

@@ -15,6 +15,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/table.h"
 #include "table/block_based/data_block_hash_index.h"
+#include "table/block_based/data_block_mph_index.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -120,6 +121,7 @@ class BlockBuilder {
   bool finished_;  // Has Finish() been called?
   std::string last_key_;
   DataBlockHashIndexBuilder data_block_hash_index_builder_;
+  DataBlockMPHIndexBuilder data_block_mph_index_builder_;
 #ifndef NDEBUG
   bool add_with_last_key_called_ = false;
 #endif

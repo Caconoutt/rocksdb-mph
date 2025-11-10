@@ -13,9 +13,12 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-const int kDataBlockIndexTypeBitShift = 31;
+// originally only 1 bit reserved for hashIndex, but now need 2 bits
+// const int kDataBlockIndexTypeBitShift = 31;
+const int kDataBlockIndexTypeBitShift = 30;
 
-// 0x7FFFFFFF
+// 31 bits: 0x7FFFFFFF
+// 30 bits: 0x3FFFFFFF
 const uint32_t kMaxNumRestarts = (1u << kDataBlockIndexTypeBitShift) - 1u;
 
 // 0x7FFFFFFF
@@ -29,7 +32,9 @@ uint32_t PackIndexTypeAndNumRestarts(
   }
 
   uint32_t block_footer = num_restarts;
-  if (index_type == BlockBasedTableOptions::kDataBlockBinaryAndHash) {
+  if (index_type == BlockBasedTableOptions::kDataBlockBinaryAndMPHash) {
+    block_footer |= 2u << kDataBlockIndexTypeBitShift;
+  } else if (index_type == BlockBasedTableOptions::kDataBlockBinaryAndHash) {
     block_footer |= 1u << kDataBlockIndexTypeBitShift;
   } else if (index_type != BlockBasedTableOptions::kDataBlockBinarySearch) {
     assert(0);
@@ -43,10 +48,19 @@ void UnPackIndexTypeAndNumRestarts(
     BlockBasedTableOptions::DataBlockIndexType* index_type,
     uint32_t* num_restarts) {
   if (index_type) {
-    if (block_footer & 1u << kDataBlockIndexTypeBitShift) {
-      *index_type = BlockBasedTableOptions::kDataBlockBinaryAndHash;
-    } else {
-      *index_type = BlockBasedTableOptions::kDataBlockBinarySearch;
+    uint32_t index_type_bits = block_footer >> kDataBlockIndexTypeBitShift;
+    switch (index_type_bits) {
+      case 0:
+        *index_type = BlockBasedTableOptions::kDataBlockBinarySearch;
+        break;
+      case 1:
+        *index_type = BlockBasedTableOptions::kDataBlockBinaryAndHash;
+        break;
+      case 2:
+        *index_type = BlockBasedTableOptions::kDataBlockBinaryAndMPHash;
+        break;
+      default:
+        *index_type = BlockBasedTableOptions::kDataBlockBinarySearch;
     }
   }
 

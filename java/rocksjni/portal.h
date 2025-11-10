@@ -6919,6 +6919,9 @@ class DataBlockIndexTypeJni {
       case ROCKSDB_NAMESPACE::BlockBasedTableOptions::DataBlockIndexType::
           kDataBlockBinaryAndHash:
         return 0x1;
+      case ROCKSDB_NAMESPACE::BlockBasedTableOptions::DataBlockIndexType::
+          kDataBlockBinaryAndMPHash:
+        return 0x2;
       default:
         return 0x7F;  // undefined
     }
@@ -6935,6 +6938,10 @@ class DataBlockIndexTypeJni {
       case 0x1:
         return ROCKSDB_NAMESPACE::BlockBasedTableOptions::DataBlockIndexType::
             kDataBlockBinaryAndHash;
+      case 0x2:
+        std::cerr << "[DEBUG] MPH: MPH in portal.h" << std::flush;
+        return ROCKSDB_NAMESPACE::BlockBasedTableOptions::DataBlockIndexType::
+            kDataBlockBinaryAndMPHash;
       default:
         // undefined/default
         return ROCKSDB_NAMESPACE::BlockBasedTableOptions::DataBlockIndexType::

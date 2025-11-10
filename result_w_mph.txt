@@ -1,0 +1,4 @@
+# RocksDB point query benchmark (hash index on/off/mph)
+# Mon Nov 10 15:36:32 UTC 2025
+# key_size=8, value_size=8, reads=1000000
+

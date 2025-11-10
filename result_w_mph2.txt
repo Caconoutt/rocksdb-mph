@@ -1,0 +1,13 @@
+# RocksDB point query benchmark (hash index on/off/mph)
+# Mon Nov 10 15:02:47 UTC 2025
+# key_size=8, value_size=8, reads=1000000
+
+
+### cache_size=2147483648, use_data_block_mph_index=1, num_keys=100000
+readrandom   :       0.981 micros/op 1019397 ops/sec 60.011 seconds 61174999 operations;   15.6 MB/s (61174999 of 61174999 found)
+
+### cache_size=2147483648, use_data_block_hash_index=0, num_keys=100000
+readrandom   :       0.966 micros/op 1035491 ops/sec 60.001 seconds 62129999 operations;   15.8 MB/s (62129999 of 62129999 found)
+
+### cache_size=2147483648, use_data_block_hash_index=1, num_keys=100000
+readrandom   :       1.008 micros/op 991875 ops/sec 60.000 seconds 59512999 operations;   15.1 MB/s (59512999 of 59512999 found)

@@ -462,6 +462,59 @@ bool DataBlockIter::SeekForGetImpl(const Slice& target) {
   return true;
 }
 
+bool DataBlockIter::SeekForGetMPHImpl(const Slice& target) {
+  Slice target_user_key = ExtractUserKey(target);
+  uint8_t entry = 
+      data_block_mph_index_->Lookup(target_user_key); // guarantee finds the restart_index
+  
+  uint32_t restart_index = entry;
+  assert(restart_index < num_restarts_);
+
+  // --- Jump to the restart_index's restart interval ---
+  SeekToRestartPoint(restart_index);
+  current_ = GetRestartPoint(restart_index);
+  cur_entry_idx_ =
+      static_cast<int32_t>(restart_index * block_restart_interval_) - 1;
+  uint32_t limit = restarts_;
+  if (restart_index + 1 < num_restarts_) {
+    limit = GetRestartPoint(restart_index + 1);
+  }
+  // --- Linear scan inside this restart interval ---
+  while (current_ < limit) {
+    ++cur_entry_idx_;
+    bool shared;
+    if (!ParseNextDataKey(&shared) || CompareCurrentKey(target) >= 0) {
+      // Stop at the first key >= target
+      break;
+    }
+  }
+  // TODO: concerns? if input key not exists in the data block, then mph return empty restart entry?
+  // what if collision then return wrong key? will that key be filter before even iterating the datablock?
+  // not true for mph? what is next block here
+  if (current_ == restarts_) {
+    return true;  // may exist in next block
+  }
+
+  // Compare actual user keys to check match
+  if (icmp_->user_comparator()->Compare(raw_key_.GetUserKey(),
+                                        target_user_key) != 0) {
+    return false;  // definitely not in this block
+  }
+
+  ValueType value_type = ExtractValueType(raw_key_.GetInternalKey());
+  if (value_type != ValueType::kTypeValue &&
+      value_type != ValueType::kTypeDeletion &&
+      value_type != ValueType::kTypeMerge &&
+      value_type != ValueType::kTypeSingleDeletion &&
+      value_type != ValueType::kTypeBlobIndex &&
+      value_type != ValueType::kTypeWideColumnEntity &&
+      value_type != ValueType::kTypeValuePreferredSeqno) {
+    SeekImpl(target);
+  }
+
+  // Result found, and the iter is correctly set.
+  return true;
+}
 void IndexBlockIter::SeekImpl(const Slice& target) {
 #ifndef NDEBUG
   if (TEST_Corrupt_Callback("IndexBlockIter::SeekImpl")) {
@@ -1068,7 +1121,7 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
     // Should only decode restart points for uncompressed blocks
     num_restarts_ = NumRestarts();
     switch (IndexType()) {
-      case BlockBasedTableOptions::kDataBlockBinarySearch:
+      case BlockBasedTableOptions::kDataBlockBinarySearch: {
         restart_offset_ = static_cast<uint32_t>(size) -
                           (1 + num_restarts_) * sizeof(uint32_t);
         if (restart_offset_ > size - sizeof(uint32_t)) {
@@ -1077,7 +1130,8 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
           size = 0;
         }
         break;
-      case BlockBasedTableOptions::kDataBlockBinaryAndHash:
+      }
+      case BlockBasedTableOptions::kDataBlockBinaryAndHash: {
         if (size < sizeof(uint32_t) /* block footer */ +
                        sizeof(uint16_t) /* NUM_BUCK */) {
           size = 0;
@@ -1099,6 +1153,23 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
           break;
         }
         break;
+      }
+      case BlockBasedTableOptions::kDataBlockBinaryAndMPHash: {
+        uint16_t map_offset;
+        data_block_mph_index_.Initialize(
+          contents_.data.data(),
+          /* chop off NUM_RESTARTS */
+          static_cast<uint16_t>(size - sizeof(uint32_t)), &map_offset);
+        restart_offset_ = map_offset - num_restarts_ * sizeof(uint32_t);
+        
+        if (restart_offset_ > map_offset) {
+          // map_offset is too small for NumRestarts() and
+          // therefore restart_offset_ wrapped around.
+          size = 0;
+          break;
+        }
+        break;
+      }
       default:
         size = 0;  // Error marker
     }
@@ -1276,6 +1347,7 @@ DataBlockIter* Block::NewDataIterator(const Comparator* raw_ucmp,
         read_amp_bitmap_.get(), block_contents_pinned,
         user_defined_timestamps_persisted,
         data_block_hash_index_.Valid() ? &data_block_hash_index_ : nullptr,
+        data_block_mph_index_.Valid() ? &data_block_mph_index_ : nullptr,
         protection_bytes_per_key_, kv_checksum_, block_restart_interval_);
     if (read_amp_bitmap_) {
       if (read_amp_bitmap_->GetStatistics() != stats) {
