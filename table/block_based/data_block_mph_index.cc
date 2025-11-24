@@ -91,9 +91,34 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
     sizeof(uint8_t) + minimal_perfect_hash.bitVector_->rankPrefix.size() * sizeof(uint8_t) + // rankPrefix
     sizeof(uint8_t) + minimal_perfect_hash.values_.size() * sizeof(uint8_t); // values
 
-  PutFixed32(&buffer, mph_index_size);  
-}
+  PutFixed32(&buffer, mph_index_size);
 
+  // === mph detail === 
+ {
+  FILE* mph_detail_file = fopen("mph_detail_k8v8.txt", "a");
+  if (mph_detail_file != nullptr) {
+
+  // write entries, size of level_capacity_, bitVector, rankPrefix, values, mph
+  fprintf(mph_detail_file,
+    "{\"num_entry\": %zu, \"num_levels\": %zu, "
+    "\"num_bv\": %zu, \"num_rp\": %zu, \"num_value\": %zu, \"mph_size\": %zu}\n",
+    key_and_restart_pairs_.size(),
+    minimal_perfect_hash.level_capacity_.size(),
+    minimal_perfect_hash.bitVector_->bitVector.size(),
+    minimal_perfect_hash.bitVector_->rankPrefix.size(),
+    minimal_perfect_hash.values_.size(),
+    mph_index_size
+  );
+
+    fclose(mph_detail_file);
+  }
+ }
+}
+// timer
+// uint64_t start = rocksdb::Env::Default()->NowMicros();
+// // ... your code ...
+// uint64_t end = rocksdb::Env::Default()->NowMicros();
+// printf("Elapsed: %lu microseconds\n", end - start);
 void DataBlockMPHIndexBuilder::Reset() {
   valid_ = true;
   key_and_restart_pairs_.clear();
@@ -260,22 +285,6 @@ MPH::MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs) {
     keys.swap(nxt);
   }
   bitVector_ = std::make_unique<BitVector>(bitVectorInput);
-  // == debug ==
-//  {
-//    FILE* debug_file = fopen("debugwrite1123.txt", "a");
-//    if (debug_file != nullptr) {
-//
-//      // Write all caps (level_capacity_)
-//      fprintf(debug_file, "== in build mph == \n: ");
-//      fprintf(debug_file, "level_capacity_: ");
-//      for (uint16_t cap : level_capacity_) {
-//        fprintf(debug_file, "%u ", cap);
-//      }
-//      fprintf(debug_file, "\n");
-//
-//      fclose(debug_file);
-//    }
-//  }
 }
 
 MPH::MPH(std::vector<uint8_t> level_capacity,
