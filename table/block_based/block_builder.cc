@@ -148,7 +148,8 @@ Slice BlockBuilder::Finish() {
     data_block_hash_index_builder_.Finish(buffer_);
     index_type = BlockBasedTableOptions::kDataBlockBinaryAndHash;
   }
-  if (data_block_mph_index_builder_.Valid()) {
+  if (data_block_mph_index_builder_.Valid() &&
+      CurrentSizeEstimate() <= kMaxBlockSizeSupportedByHashIndex) {
     data_block_mph_index_builder_.Finish(buffer_);
     index_type = BlockBasedTableOptions::kDataBlockBinaryAndMPHash;
   }

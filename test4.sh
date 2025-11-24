@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-RESULTS_FILE=result_w_mph.txt
+RESULTS_FILE=result_w_mph_k8v100.txt
 SEED=99382307420011
 DB_BASE=/tmp/rocksdb-bench
 KEY_SIZE=8              # bytes per key
-VALUE_SIZE=8            # bytes per value
-CACHE_SIZE=$((2<<30))   # 2 GB
+VALUE_SIZE=100           # bytes per value
+CACHE_SIZE=$((1<<30))   # 1 GB
 READS=1000000           # 1 million
-NUM_KV=20000000         # 20 million KV < 500 MB
+NUM_KV=2000000          # 2 million KV = 32 MB
 # NUM_KV=100000
 DURATION=60             # early stop
 
@@ -52,7 +52,7 @@ run_test() {
     --compression_type=none
     --cache_size=$CACHE_SIZE
     --cache_index_and_filter_blocks=1
-    --disable_auto_compactions=0
+    --disable_auto_compactions=1
   )
 # --pin_l0_filter_and_index_blocks_in_cache=1
   # Append hash index flags accordingly
@@ -101,3 +101,12 @@ run_test 1
 
 echo ""
 echo "Done! Results written to $RESULTS_FILE"
+
+
+
+
+# # test
+# # write
+# ./db_bench   --seed=99382307420011   --benchmarks=filluniquerandom   --db=/tmp/rocksdb-bench/mph   --num=1000000   --key_size=8   --value_size=8   --compression_type=none   --cache_size=1073741824   --cache_index_and_filter_blocks=1   --disable_auto_compactions=1   --use_data_block_mph_index=1 --threads=1 --write_buffer_size=4194304
+# # read
+# ./db_bench   --seed=99382307420011   --benchmarks=readrandom   --use_existing_db=1   --use_existing_keys=1   --num=1000000   --duration=60   --db=/tmp/rocksdb-bench/mph   --key_size=8   --value_size=8   --compression_type=none   --cache_size=1073741824   --cache_index_and_filter_blocks=1   --disable_auto_compactions=1   --use_data_block_mph_index=1 --threads=1

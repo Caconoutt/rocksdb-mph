@@ -466,9 +466,8 @@ bool DataBlockIter::SeekForGetMPHImpl(const Slice& target) {
   Slice target_user_key = ExtractUserKey(target);
   uint8_t entry = 
       data_block_mph_index_->Lookup(target_user_key); // guarantee finds the restart_index
-  
+
   uint32_t restart_index = entry;
-  assert(restart_index < num_restarts_);
 
   // --- Jump to the restart_index's restart interval ---
   SeekToRestartPoint(restart_index);
@@ -1159,9 +1158,9 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
         data_block_mph_index_.Initialize(
           contents_.data.data(),
           /* chop off NUM_RESTARTS */
-          static_cast<uint16_t>(size - sizeof(uint32_t)), &map_offset);
+          static_cast<uint32_t>(size - sizeof(uint32_t)), &map_offset);
         restart_offset_ = map_offset - num_restarts_ * sizeof(uint32_t);
-        
+
         if (restart_offset_ > map_offset) {
           // map_offset is too small for NumRestarts() and
           // therefore restart_offset_ wrapped around.
