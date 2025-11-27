@@ -29,6 +29,7 @@
 #include "table/internal_iterator.h"
 #include "test_util/sync_point.h"
 #include "util/random.h"
+#include <inttypes.h>
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -724,11 +725,35 @@ class DataBlockIter final : public BlockIter<Slice> {
     if (TEST_Corrupt_Callback("DataBlockIter::SeekForGet")) return true;
 #endif
     if (data_block_hash_index_) {
+      // uint64_t start = rocksdb::Env::Default()->NowMicros();
       bool res = SeekForGetImpl(target);
+      // uint64_t end = rocksdb::Env::Default()->NowMicros();
+      // === file write ===
+      // {
+      //   FILE* hash_file = fopen("hash_seekforget_k8v8.txt", "a");
+      //   if (hash_file != nullptr) {
+
+      //   fprintf(hash_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
+      //   fflush(hash_file);
+      //   fclose(hash_file);
+      //   }
+      // }
       UpdateKey();
       return res;
     } else if (data_block_mph_index_) {
+      // uint64_t start = rocksdb::Env::Default()->NowMicros();
       bool res = SeekForGetMPHImpl(target);
+      // uint64_t end = rocksdb::Env::Default()->NowMicros();
+      // === file write ===
+      // {
+      //   FILE* mph_file = fopen("mph_seekforget_k8v8.txt", "a");
+      //   if (mph_file != nullptr) {
+
+      //   fprintf(mph_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
+      //   fflush(mph_file);
+      //   fclose(mph_file);
+      //   }
+      // }
       UpdateKey();
       return res;
     } else {
@@ -736,15 +761,6 @@ class DataBlockIter final : public BlockIter<Slice> {
       UpdateKey();
       return true;
     }
-
-    // if (!data_block_hash_index_) {
-    //   SeekImpl(target);
-    //   UpdateKey();
-    //   return true;
-    // }
-    // bool res = SeekForGetImpl(target);
-    // UpdateKey();
-    // return res;
   }
 
   void Invalidate(const Status& s) override {

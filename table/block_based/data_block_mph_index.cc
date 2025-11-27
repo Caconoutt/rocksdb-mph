@@ -27,18 +27,6 @@ void DataBlockMPHIndexBuilder::Add(const Slice& key,
   if (EstimateSize() > kMaxBlockSizeSupportedByHashIndex) {
     valid_ = false;
   }
-
-// === write to file == 
-//  {
-//    // Open in append mode so each call adds a new line
-//    FILE* debug_file = fopen("debugwrite1120.txt", "a");
-//    if (debug_file != nullptr) {
-//      std::string key_str(key.data(), key.size());
-//      fprintf(debug_file, "Write(%s) to hash value %llu, restart index: %zu\n",
-//              key_str.c_str(), hash_value,restart_index);
-//      fclose(debug_file);
-//    }
-//  }
 }
 
 void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
@@ -51,8 +39,6 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
   uint8_t level_capacity_size = minimal_perfect_hash.level_capacity_.size();
   buffer.push_back(static_cast<char>(level_capacity_size));
   for (uint8_t cap : minimal_perfect_hash.level_capacity_) {
-    // fprintf(stderr, "  level_capacity = %u\n", cap);
-    // running += sizeof(uint16_t);
     buffer.append(
         const_cast<const char*>(reinterpret_cast<char*>(&cap)),
         sizeof(cap));
@@ -94,27 +80,27 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
   PutFixed32(&buffer, mph_index_size);
 
   // === mph detail === 
- {
-  FILE* mph_detail_file = fopen("mph_detail_k8v8.txt", "a");
-  if (mph_detail_file != nullptr) {
+//  {
+//   FILE* mph_file = fopen("mph_detail_k8v8.txt", "a");
+//   if (mph_file != nullptr) {
 
-  // write entries, size of level_capacity_, bitVector, rankPrefix, values, mph
-  fprintf(mph_detail_file,
-    "{\"num_entry\": %zu, \"num_levels\": %zu, "
-    "\"num_bv\": %zu, \"num_rp\": %zu, \"num_value\": %zu, \"mph_size\": %zu}\n",
-    key_and_restart_pairs_.size(),
-    minimal_perfect_hash.level_capacity_.size(),
-    minimal_perfect_hash.bitVector_->bitVector.size(),
-    minimal_perfect_hash.bitVector_->rankPrefix.size(),
-    minimal_perfect_hash.values_.size(),
-    mph_index_size
-  );
+//   // write entries, size of level_capacity_, bitVector, rankPrefix, values, mph
+//   fprintf(mph_file,
+//     "{\"num_entry\": %zu, \"num_levels\": %zu, "
+//     "\"num_bv\": %zu, \"num_rp\": %zu, \"num_value\": %zu, \"mph_size\": %u}\n",
+//     key_and_restart_pairs_.size(),
+//     minimal_perfect_hash.level_capacity_.size(),
+//     minimal_perfect_hash.bitVector_->bitVector.size(),
+//     minimal_perfect_hash.bitVector_->rankPrefix.size(),
+//     minimal_perfect_hash.values_.size(),
+//     mph_index_size
+//   );
 
-    fclose(mph_detail_file);
-  }
- }
+//     fclose(mph_file);
+//   }
+//  }
 }
-// timer
+// timer template
 // uint64_t start = rocksdb::Env::Default()->NowMicros();
 // // ... your code ...
 // uint64_t end = rocksdb::Env::Default()->NowMicros();
@@ -174,25 +160,25 @@ void DataBlockMPHIndex::Initialize(const char* data, uint32_t size,
   auto bv = std::make_unique<BitVector>(std::move(bitVector), std::move(rankPrefix));
   mph_ = std::make_unique<MPH>(std::move(level_capacity), std::move(values), std::move(bv));
   *map_offset = static_cast<uint16_t>(size - sizeof(uint32_t) - mph_index_size_);
-  {
-    FILE* debug_file = fopen("debugread1124.txt", "a");
-    if (debug_file != nullptr) {
+  // {
+  //   FILE* debug_file = fopen("debugread1124.txt", "a");
+  //   if (debug_file != nullptr) {
 
-      // Write all caps (level_capacity_)
-      fprintf(debug_file, "level_capacity_: ");
-      for (uint16_t cap : mph_->level_capacity_) {
-        fprintf(debug_file, "%u ", cap);
-      }
-      fprintf(debug_file, "\n");
-      fprintf(debug_file, "rankPrefix: ");
-      for (uint16_t r : mph_->bitVector_->rankPrefix) {
-        fprintf(debug_file, "%u ", r);
-      }
-      fprintf(debug_file, "\n");
+  //     // Write all caps (level_capacity_)
+  //     fprintf(debug_file, "level_capacity_: ");
+  //     for (uint16_t cap : mph_->level_capacity_) {
+  //       fprintf(debug_file, "%u ", cap);
+  //     }
+  //     fprintf(debug_file, "\n");
+  //     fprintf(debug_file, "rankPrefix: ");
+  //     for (uint16_t r : mph_->bitVector_->rankPrefix) {
+  //       fprintf(debug_file, "%u ", r);
+  //     }
+  //     fprintf(debug_file, "\n");
 
-      fclose(debug_file);
-    }
-  }
+  //     fclose(debug_file);
+  //   }
+  // }
 }
 
 uint8_t DataBlockMPHIndex::Lookup(const Slice& key) const {
