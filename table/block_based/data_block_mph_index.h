@@ -77,9 +77,9 @@ class DataBlockMPHIndexBuilder {
       sizeof(uint8_t) + 
       estimated_num_bitvector_words * sizeof(uint64_t);
     // estimate rank
-    size_t rank_prefix_size = 
-      sizeof(uint8_t) + 
-      ceil(estimated_num_bitvector_words / sizeof(uint8_t));
+    // size_t rank_prefix_size = 
+    //   sizeof(uint8_t) + 
+    //   ceil(estimated_num_bitvector_words / sizeof(uint8_t));
     // estimate value
     size_t value_size = 
       sizeof(uint8_t) + 
@@ -90,7 +90,7 @@ class DataBlockMPHIndexBuilder {
       std::ceil(std::log2(n)) * sizeof(uint8_t);
     size_t footer = sizeof(uint32_t);
 
-    return estimated_bit_vector_size + rank_prefix_size + value_size + level_capacities_size + footer;
+    return estimated_bit_vector_size + value_size + level_capacities_size + footer;
   }
 
  private:
@@ -104,26 +104,16 @@ class BitVector {
 public:
     explicit BitVector(const std::vector<bool>& v);
 
-    // BitVector(std::vector<uint64_t> bitVector_, std::vector<uint8_t> rankPrefix_)
-    //     : bitVector(std::move(bitVector_)), rankPrefix(std::move(rankPrefix_)) {}
-
     bool get(size_t i) const;
     size_t rank(size_t i) const;
 
 // private:
     std::vector<uint64_t> bitVector;
-    // std::vector<uint8_t> rankPrefix;
 };
 
 class MPH {
 public:
     explicit MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs);
-
-    // MPH(std::vector<uint8_t> level_capacity,
-    //     std::vector<uint8_t> values,
-    //     std::unique_ptr<BitVector> bitVector);
-
-    // std::uint8_t get(const Slice& key);
 
 // private:
     std::vector<uint8_t> level_capacity_;
@@ -147,13 +137,9 @@ class DataBlockMPHIndex {
   }
 
  private:
-  // std::unique_ptr<MPH> mph_;
   uint32_t mph_index_size_;
-  uint8_t level_capacity_size_;
   uint32_t level_offset_;
-  uint8_t bv_size_;
   uint32_t bitVector_offset_;
-  uint8_t values_size_;
   uint32_t value_offset_;
 };
 }  // namespace ROCKSDB_NAMESPACE

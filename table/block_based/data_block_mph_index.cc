@@ -56,15 +56,6 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
         sizeof(b));
   }
 
-  // // rankprefix.size(), rankprefix
-  // uint8_t rankPrefix_size = minimal_perfect_hash.bitVector_->rankPrefix.size();
-  // buffer.push_back(static_cast<char>(rankPrefix_size));
-  // for (uint8_t r : minimal_perfect_hash.bitVector_->rankPrefix) {
-  //   buffer.append(
-  //       const_cast<const char*>(reinterpret_cast<char*>(&r)),
-  //       sizeof(r));
-  // }
-
   // values_.size, values_
   uint8_t values_size = minimal_perfect_hash.values_.size();
   buffer.push_back(static_cast<char>(values_size));
@@ -104,11 +95,7 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
 //   }
 //  }
 }
-// timer template
-// uint64_t start = rocksdb::Env::Default()->NowMicros();
-// // ... your code ...
-// uint64_t end = rocksdb::Env::Default()->NowMicros();
-// printf("Elapsed: %lu microseconds\n", end - start);
+
 void DataBlockMPHIndexBuilder::Reset() {
   valid_ = true;
   key_and_restart_pairs_.clear();
@@ -124,49 +111,33 @@ void DataBlockMPHIndex::Initialize(const char* data, uint32_t size,
   const char* pos = mph_start;
 
   // level_capacity_
-  level_capacity_size_ = static_cast<uint8_t>(*pos);
+  uint8_t level_capacity_size = static_cast<uint8_t>(*pos);
   level_offset_ = pos - data + sizeof(uint8_t);
-  pos = pos + sizeof(uint8_t) + level_capacity_size_ * sizeof(uint8_t);
+  pos = pos + sizeof(uint8_t) + level_capacity_size * sizeof(uint8_t);
   // bitVector
-  bv_size_ = static_cast<uint8_t>(*pos);
+  uint8_t bv_size = static_cast<uint8_t>(*pos);
   bitVector_offset_ = pos - data + sizeof(uint8_t);
-  pos = pos + sizeof(uint8_t) + bv_size_ * sizeof(uint64_t);
+  pos = pos + sizeof(uint8_t) + bv_size * sizeof(uint64_t);
   // values_
-  values_size_ = static_cast<uint8_t>(*pos);
+  uint8_t values_size = static_cast<uint8_t>(*pos);
   value_offset_ = pos - data + sizeof(uint8_t);
-  pos = pos + sizeof(uint8_t) + values_size_ * sizeof(uint8_t);
+  pos = pos + sizeof(uint8_t) + values_size * sizeof(uint8_t);
 
   assert(static_cast<uint32_t>(pos - mph_start) == mph_index_size_);
 
   *map_offset = static_cast<uint16_t>(size - sizeof(uint32_t) - mph_index_size_);
-  // {
-  //   FILE* debug_file = fopen("debugread1124.txt", "a");
-  //   if (debug_file != nullptr) {
-
-  //     // Write all caps (level_capacity_)
-  //     fprintf(debug_file, "level_capacity_: ");
-  //     for (uint16_t cap : mph_->level_capacity_) {
-  //       fprintf(debug_file, "%u ", cap);
-  //     }
-  //     fprintf(debug_file, "\n");
-  //     fprintf(debug_file, "rankPrefix: ");
-  //     for (uint16_t r : mph_->bitVector_->rankPrefix) {
-  //       fprintf(debug_file, "%u ", r);
-  //     }
-  //     fprintf(debug_file, "\n");
-
-  //     fclose(debug_file);
-  //   }
-  // }
 }
 
 uint8_t DataBlockMPHIndex::Lookup(const char* data, const Slice& key) const {
   size_t pos = 0;
+  uint8_t level_capacity_size =
+    *(reinterpret_cast<const uint8_t*>(data + level_offset_ - 1));
+
   const uint8_t* level_capacity = reinterpret_cast<const uint8_t*>(data + level_offset_);
   const uint64_t* bit_vector = reinterpret_cast<const uint64_t*>(data + bitVector_offset_);
   const uint8_t* values = reinterpret_cast<const uint8_t*>(data + value_offset_);
 
-  for (size_t level = 0; level < level_capacity_size_; ++level) {
+  for (size_t level = 0; level < level_capacity_size; ++level) {
     uint64_t seed = (level + 1) * kSeedJump;
     uint8_t cap = level_capacity[level];
     auto h = GetSliceHash64(key, seed) % cap;
@@ -201,14 +172,6 @@ BitVector::BitVector(const std::vector<bool>& v) {
           bitVector[i >> 6] |= (1ULL << (i & 63));
       }
   }
-  // set rankPrefix with an extra element for convenience
-  // rankPrefix.resize(bitVector.size() + 1);
-  // size_t sum = 0;
-  // rankPrefix[0] = 0;
-  // for (size_t i = 0; i < bitVector.size(); ++i) {
-  //     sum += popcount(bitVector[i]);
-  //     rankPrefix[i + 1] = sum;
-  // }
 }
 
 bool BitVector::get(size_t i) const {
@@ -280,24 +243,4 @@ MPH::MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs) {
   bitVector_ = std::make_unique<BitVector>(bitVectorInput);
 }
 
-// MPH::MPH(std::vector<uint8_t> level_capacity,
-//     std::vector<uint8_t> values,
-//     std::unique_ptr<BitVector> bitVector)
-//     : level_capacity_(std::move(level_capacity)),
-//       values_(std::move(values)),
-//       bitVector_(std::move(bitVector)) {}
-// uint8_t MPH::get(const Slice& key) {
-//   size_t pos = 0;
-//   for (size_t level = 0; level < level_capacity_.size(); ++level) {
-//     uint64_t seed = (level + 1) * kSeedJump;
-//     auto h = GetSliceHash64(key, seed) % level_capacity_[level];
-
-//     if (bitVector_->get(pos + h)) {
-//         size_t rank = bitVector_->rank(pos + h);
-//         return values_[rank];
-//     }
-//     pos += level_capacity_[level];
-//   }
-//   return {};
-// }
 }  // namespace ROCKSDB_NAMESPACE
