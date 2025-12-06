@@ -125,16 +125,16 @@ void DataBlockMPHIndex::Initialize(const char* data, uint32_t size,
 
   // level_capacity_
   level_capacity_size_ = static_cast<uint8_t>(*pos);
+  level_offset_ = pos - data + sizeof(uint8_t);
   pos = pos + sizeof(uint8_t) + level_capacity_size_ * sizeof(uint8_t);
-  level_offset_ = static_cast<uint32_t>(size - sizeof(uint32_t) - mph_index_size_ + sizeof(uint8_t));
   // bitVector
   bv_size_ = static_cast<uint8_t>(*pos);
+  bitVector_offset_ = pos - data + sizeof(uint8_t);
   pos = pos + sizeof(uint8_t) + bv_size_ * sizeof(uint64_t);
-  bitVector_offset_ = level_offset_ + level_capacity_size_ * sizeof(uint8_t) + sizeof(uint8_t);
   // values_
   values_size_ = static_cast<uint8_t>(*pos);
+  value_offset_ = pos - data + sizeof(uint8_t);
   pos = pos + sizeof(uint8_t) + values_size_ * sizeof(uint8_t);
-  value_offset_ = bitVector_offset_ + bv_size_ * sizeof(uint64_t) + sizeof(uint8_t);
 
   assert(static_cast<uint32_t>(pos - mph_start) == mph_index_size_);
 
@@ -176,7 +176,7 @@ uint8_t DataBlockMPHIndex::Lookup(const char* data, const Slice& key) const {
     size_t block_idx = bit_pos >> 6; // divide by 64
     uint64_t mask = (1ULL << (bit_pos & 63)) - 1;
 
-    if ((bit_vector[block_idx] & mask) != 0 ) {
+    if (bit_vector[block_idx] & (1ULL << (bit_pos & 63))) {
       size_t rank = 0;
       for (size_t i = 0; i < block_idx; i++) {
         rank += popcount(bit_vector[i]);
