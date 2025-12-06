@@ -65,6 +65,36 @@ void DataBlockHashIndexBuilder::Finish(std::string& buffer) {
   PutFixed16(&buffer, num_buckets);
 
   assert(buffer.size() <= kMaxBlockSizeSupportedByHashIndex);
+
+// // Count bucket categories
+// uint32_t count_no_entry = 0;
+// uint32_t count_collision = 0;
+// uint32_t count_valid = 0;
+// uint32_t total_entries = hash_and_restart_pairs_.size();
+
+// for (uint16_t i = 0; i < num_buckets; i++) {
+//   if (buckets[i] == kNoEntry) {
+//     count_no_entry++;
+//   } else if (buckets[i] == kCollision) {
+//     count_collision++;
+//   } else {
+//     count_valid++;
+//   }
+// }
+
+// // === file write ===
+// {
+//   FILE* hash_file = fopen("hash_table.txt", "a");
+//   if (hash_file != nullptr) {
+//     fprintf(hash_file,
+//             "Block finished: total_entries=%u, valid_entries=%u, no_entry_buckets=%u, collision_buckets=%u\n",
+//             total_entries, count_valid, count_no_entry, count_collision
+//           );
+
+//     fflush(hash_file);
+//     fclose(hash_file);
+//   }
+// }
 }
 
 void DataBlockHashIndexBuilder::Reset() {

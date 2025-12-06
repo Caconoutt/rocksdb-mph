@@ -725,28 +725,28 @@ class DataBlockIter final : public BlockIter<Slice> {
     if (TEST_Corrupt_Callback("DataBlockIter::SeekForGet")) return true;
 #endif
     if (data_block_hash_index_) {
-      // uint64_t start = rocksdb::Env::Default()->NowMicros();
+      // uint64_t start = rocksdb::Env::Default()->NowNanos();
       bool res = SeekForGetImpl(target);
-      // uint64_t end = rocksdb::Env::Default()->NowMicros();
-      // === file write ===
+      // uint64_t end = rocksdb::Env::Default()->NowNanos();
+      // // === file write ===
       // {
-      //   FILE* hash_file = fopen("hash_seekforget_k8v8.txt", "a");
+      //   FILE* hash_file = fopen("hash_seekforget_.txt", "a");
       //   if (hash_file != nullptr) {
-
-      //   fprintf(hash_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
-      //   fflush(hash_file);
-      //   fclose(hash_file);
+      //     uint64_t elapsed_ns = end - start;
+      //     fprintf(hash_file, "Elapsed: %" PRIu64 " nanoseconds\n", elapsed_ns);
+      //     fflush(hash_file);
+      //     fclose(hash_file);
       //   }
       // }
       UpdateKey();
       return res;
     } else if (data_block_mph_index_) {
-      // uint64_t start = rocksdb::Env::Default()->NowMicros();
+      // uint64_t start = rocksdb::Env::Default()->NowNanos();
       bool res = SeekForGetMPHImpl(target);
-      // uint64_t end = rocksdb::Env::Default()->NowMicros();
-      // === file write ===
+      // uint64_t end = rocksdb::Env::Default()->NowNanos();
+      // // === file write ===
       // {
-      //   FILE* mph_file = fopen("mph_seekforget_k8v8.txt", "a");
+      //   FILE* mph_file = fopen("mph_seekforget_.txt", "a");
       //   if (mph_file != nullptr) {
 
       //   fprintf(mph_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);

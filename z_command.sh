@@ -13,3 +13,9 @@ make -j2 data_block_perfect_mph_index_test # compile
 # === compile db_bench === #
 make clean
 make -j2 db_bench DEBUG_LEVEL=0 # compile not in debug mode
+
+# === perf profile ===
+make -j db_bench DEBUG_LEVEL=1 OPT_LEVEL=0 # build with debug
+perf record -e cycles:u -g <command>
+perf report --stdio > report.txt # output perf result to txt
+

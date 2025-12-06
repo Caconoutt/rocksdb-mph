@@ -359,10 +359,10 @@ void MetaBlockIter::SeekImpl(const Slice& target) {
 bool DataBlockIter::SeekForGetImpl(const Slice& target) {
   Slice target_user_key = ExtractUserKey(target);
   uint32_t map_offset = restarts_ + num_restarts_ * sizeof(uint32_t);
-  // uint64_t start = rocksdb::Env::Default()->NowMicros();
+  // uint64_t start = rocksdb::Env::Default()->NowNanos();
   uint8_t entry =
       data_block_hash_index_->Lookup(data_, map_offset, target_user_key);
-  // uint64_t end = rocksdb::Env::Default()->NowMicros();    
+  // uint64_t end = rocksdb::Env::Default()->NowNanos();    
 
   if (entry == kCollision) {
     // HashSeek not effective, falling back
@@ -372,10 +372,10 @@ bool DataBlockIter::SeekForGetImpl(const Slice& target) {
   // else {
   //   // === file write ===
   //   {
-  //     FILE* hash_file = fopen("hash_lookup_k8v8.txt", "a");
+  //     FILE* hash_file = fopen("hash_lookup_.txt", "a");
   //     if (hash_file != nullptr) {
 
-  //     fprintf(hash_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
+  //     fprintf(hash_file, "Elapsed: %" PRIu64 " nanoseconds\n", end - start);
   //     fflush(hash_file);
   //     fclose(hash_file);
   //     }
@@ -478,16 +478,16 @@ bool DataBlockIter::SeekForGetImpl(const Slice& target) {
 
 bool DataBlockIter::SeekForGetMPHImpl(const Slice& target) {
   Slice target_user_key = ExtractUserKey(target);
-  // uint64_t start = rocksdb::Env::Default()->NowMicros();
+  // uint64_t start = rocksdb::Env::Default()->NowNanos();
   uint8_t entry = 
       data_block_mph_index_->Lookup(target_user_key); // guarantee finds the restart_index
-  // uint64_t end = rocksdb::Env::Default()->NowMicros();
+  // uint64_t end = rocksdb::Env::Default()->NowNanos();
   // === file write ===
   // {
-  //   FILE* mph_file = fopen("mph_lookup_k8v8.txt", "a");
+  //   FILE* mph_file = fopen("mph_lookup_.txt", "a");
   //   if (mph_file != nullptr) {
 
-  //   fprintf(mph_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
+  //   fprintf(mph_file, "Elapsed: %" PRIu64 " nanoseconds\n", end - start);
   //   fflush(mph_file);
   //   fclose(mph_file);
   //   }
@@ -1163,18 +1163,18 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
         }
 
         uint16_t map_offset;
-        // uint64_t start = rocksdb::Env::Default()->NowMicros();
+        // uint64_t start = rocksdb::Env::Default()->NowNanos();
         data_block_hash_index_.Initialize(
             contents_.data.data(),
             /* chop off NUM_RESTARTS */
             static_cast<uint16_t>(size - sizeof(uint32_t)), &map_offset);
-        // uint64_t end = rocksdb::Env::Default()->NowMicros();
+        // uint64_t end = rocksdb::Env::Default()->NowNanos();
         // === file write ===
         // {
-        //   FILE* hash_file = fopen("hash_lookup_k8v8.txt", "a");
+        //   FILE* hash_file = fopen("hash_lookup_.txt", "a");
         //   if (hash_file != nullptr) {
 
-        //   fprintf(hash_file, "Initialize: %" PRIu64 " microseconds\n", end - start);
+        //   fprintf(hash_file, "Initialize: %" PRIu64 " nanoseconds\n", end - start);
         //   fflush(hash_file);
         //   fclose(hash_file);
         //   }
@@ -1192,18 +1192,18 @@ Block::Block(BlockContents&& contents, size_t read_amp_bytes_per_bit,
       }
       case BlockBasedTableOptions::kDataBlockBinaryAndMPHash: {
         uint16_t map_offset;
-        // uint64_t start = rocksdb::Env::Default()->NowMicros();
+        // uint64_t start = rocksdb::Env::Default()->NowNanos();
         data_block_mph_index_.Initialize(
           contents_.data.data(),
           /* chop off NUM_RESTARTS */
           static_cast<uint32_t>(size - sizeof(uint32_t)), &map_offset);
-        // uint64_t end = rocksdb::Env::Default()->NowMicros();
+        // uint64_t end = rocksdb::Env::Default()->NowNanos();
         // === file write ===
         // {
-        //   FILE* mph_file = fopen("mph_lookup_k8v8.txt", "a");
+        //   FILE* mph_file = fopen("mph_lookup_.txt", "a");
         //   if (mph_file != nullptr) {
 
-        //   fprintf(mph_file, "Initialize: %" PRIu64 " microseconds\n", end - start);
+        //   fprintf(mph_file, "Initialize: %" PRIu64 " nanoseconds\n", end - start);
         //   fflush(mph_file);
         //   fclose(mph_file);
         //   }

@@ -81,12 +81,12 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
 
   // === mph detail === 
 //  {
-//   FILE* mph_file = fopen("mph_detail_k8v8.txt", "a");
+//   FILE* mph_file = fopen("mph_detail_.txt", "a");
 //   if (mph_file != nullptr) {
 
 //   // write entries, size of level_capacity_, bitVector, rankPrefix, values, mph
 //   fprintf(mph_file,
-//     "{\"num_entry\": %zu, \"num_levels\": %zu, "
+//     "Block finished: {\"num_entry\": %zu, \"num_levels\": %zu, "
 //     "\"num_bv\": %zu, \"num_rp\": %zu, \"num_value\": %zu, \"mph_size\": %u}\n",
 //     key_and_restart_pairs_.size(),
 //     minimal_perfect_hash.level_capacity_.size(),
