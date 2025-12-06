@@ -480,7 +480,7 @@ bool DataBlockIter::SeekForGetMPHImpl(const Slice& target) {
   Slice target_user_key = ExtractUserKey(target);
   // uint64_t start = rocksdb::Env::Default()->NowNanos();
   uint8_t entry = 
-      data_block_mph_index_->Lookup(target_user_key); // guarantee finds the restart_index
+      data_block_mph_index_->Lookup(data_, target_user_key); // guarantee finds the restart_index
   // uint64_t end = rocksdb::Env::Default()->NowNanos();
   // === file write ===
   // {

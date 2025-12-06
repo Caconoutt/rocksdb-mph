@@ -106,7 +106,7 @@ echo "Done! Results written to $RESULTS_FILE"
 
 
 # # test
-# # write
+# # write for CLion
 # ./db_bench   --seed=99382307420011   --benchmarks=filluniquerandom   --db=/tmp/rocksdb-bench/mph   --num=1000000   --key_size=8   --value_size=8   --compression_type=none   --cache_size=1073741824   --cache_index_and_filter_blocks=1   --disable_auto_compactions=1   --use_data_block_mph_index=1 --threads=1 --write_buffer_size=4194304
 
 # write 2 for hash
@@ -114,7 +114,7 @@ echo "Done! Results written to $RESULTS_FILE"
   --seed=99382307420011 \
   --benchmarks=filluniquerandom \
   --db=/tmp/rocksdb-bench/mph \
-  --num=2000000 \
+  --num=1000 \
   --key_size=8 \
   --value_size=64 \
   --compression_type=none \
@@ -124,7 +124,7 @@ echo "Done! Results written to $RESULTS_FILE"
   --use_data_block_mph_index=1
 
 
-# # read
+# # read for CLion
 # ./db_bench   --seed=99382307420011   --benchmarks=readrandom   --use_existing_db=1   --use_existing_keys=1   --num=1000000   --duration=60   --db=/tmp/rocksdb-bench/mph   --key_size=8   --value_size=8   --compression_type=none   --cache_size=1073741824   --cache_index_and_filter_blocks=1   --disable_auto_compactions=1   --use_data_block_mph_index=1 --threads=1
 
 # read2

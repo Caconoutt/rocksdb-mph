@@ -104,26 +104,26 @@ class BitVector {
 public:
     explicit BitVector(const std::vector<bool>& v);
 
-    BitVector(std::vector<uint64_t> bitVector_, std::vector<uint8_t> rankPrefix_)
-        : bitVector(std::move(bitVector_)), rankPrefix(std::move(rankPrefix_)) {}
+    // BitVector(std::vector<uint64_t> bitVector_, std::vector<uint8_t> rankPrefix_)
+    //     : bitVector(std::move(bitVector_)), rankPrefix(std::move(rankPrefix_)) {}
 
     bool get(size_t i) const;
     size_t rank(size_t i) const;
 
 // private:
     std::vector<uint64_t> bitVector;
-    std::vector<uint8_t> rankPrefix;
+    // std::vector<uint8_t> rankPrefix;
 };
 
 class MPH {
 public:
     explicit MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs);
 
-    MPH(std::vector<uint8_t> level_capacity,
-        std::vector<uint8_t> values,
-        std::unique_ptr<BitVector> bitVector);
+    // MPH(std::vector<uint8_t> level_capacity,
+    //     std::vector<uint8_t> values,
+    //     std::unique_ptr<BitVector> bitVector);
 
-    std::uint8_t get(const Slice& key);
+    // std::uint8_t get(const Slice& key);
 
 // private:
     std::vector<uint8_t> level_capacity_;
@@ -133,16 +133,27 @@ public:
 // ============== Minimal Pefect Hashing ===============
 class DataBlockMPHIndex {
  public:
-  DataBlockMPHIndex() : mph_(nullptr), mph_index_size_(0) {}
+  DataBlockMPHIndex() : mph_index_size_(0), level_offset_(0), bitVector_offset_(0), value_offset_(0) {}
 
   void Initialize(const char* data, uint32_t size, uint16_t* map_offset);
 
-  uint8_t Lookup(const Slice& key) const;
+  uint8_t Lookup(const char* data, const Slice& key) const;
 
-  inline bool Valid() { return mph_ != nullptr && mph_index_size_ != 0; }
+  inline bool Valid() { return 
+    mph_index_size_ != 0 && 
+    level_offset_ != 0 && 
+    bitVector_offset_ != 0 && 
+    value_offset_ != 0; 
+  }
 
  private:
-  std::unique_ptr<MPH> mph_;
+  // std::unique_ptr<MPH> mph_;
   uint32_t mph_index_size_;
+  uint8_t level_capacity_size_;
+  uint32_t level_offset_;
+  uint8_t bv_size_;
+  uint32_t bitVector_offset_;
+  uint8_t values_size_;
+  uint32_t value_offset_;
 };
 }  // namespace ROCKSDB_NAMESPACE

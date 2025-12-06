@@ -14,6 +14,10 @@
 #include <cstdio>
 namespace ROCKSDB_NAMESPACE {
 
+inline int popcount(uint64_t x) {
+  return __builtin_popcountll(x);  // GCC/Clang builtin
+}
+
 void DataBlockMPHIndexBuilder::Add(const Slice& key,
                                     const size_t restart_index) {
   assert(Valid());
@@ -52,14 +56,14 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
         sizeof(b));
   }
 
-  // rankprefix.size(), rankprefix
-  uint8_t rankPrefix_size = minimal_perfect_hash.bitVector_->rankPrefix.size();
-  buffer.push_back(static_cast<char>(rankPrefix_size));
-  for (uint8_t r : minimal_perfect_hash.bitVector_->rankPrefix) {
-    buffer.append(
-        const_cast<const char*>(reinterpret_cast<char*>(&r)),
-        sizeof(r));
-  }
+  // // rankprefix.size(), rankprefix
+  // uint8_t rankPrefix_size = minimal_perfect_hash.bitVector_->rankPrefix.size();
+  // buffer.push_back(static_cast<char>(rankPrefix_size));
+  // for (uint8_t r : minimal_perfect_hash.bitVector_->rankPrefix) {
+  //   buffer.append(
+  //       const_cast<const char*>(reinterpret_cast<char*>(&r)),
+  //       sizeof(r));
+  // }
 
   // values_.size, values_
   uint8_t values_size = minimal_perfect_hash.values_.size();
@@ -74,7 +78,7 @@ void DataBlockMPHIndexBuilder::Finish(std::string& buffer) {
   uint32_t mph_index_size = 
     sizeof(uint8_t) + minimal_perfect_hash.level_capacity_.size() * sizeof(uint8_t) +   // level_capacity
     sizeof(uint8_t) + minimal_perfect_hash.bitVector_->bitVector.size() * sizeof(uint64_t) + // bitVector
-    sizeof(uint8_t) + minimal_perfect_hash.bitVector_->rankPrefix.size() * sizeof(uint8_t) + // rankPrefix
+    // sizeof(uint8_t) + minimal_perfect_hash.bitVector_->rankPrefix.size() * sizeof(uint8_t) + // rankPrefix
     sizeof(uint8_t) + minimal_perfect_hash.values_.size() * sizeof(uint8_t); // values
 
   PutFixed32(&buffer, mph_index_size);
@@ -120,45 +124,20 @@ void DataBlockMPHIndex::Initialize(const char* data, uint32_t size,
   const char* pos = mph_start;
 
   // level_capacity_
-  uint8_t level_capacity_size = static_cast<uint8_t>(*pos);
-  pos += sizeof(uint8_t);
-  std::vector<uint8_t> level_capacity(level_capacity_size);
-  for (size_t i = 0; i < level_capacity_size; ++i) {
-    level_capacity[i] = static_cast<uint8_t>(*pos);
-    pos += sizeof(uint8_t);
-  }
-
+  level_capacity_size_ = static_cast<uint8_t>(*pos);
+  pos = pos + sizeof(uint8_t) + level_capacity_size_ * sizeof(uint8_t);
+  level_offset_ = static_cast<uint32_t>(size - sizeof(uint32_t) - mph_index_size_ + sizeof(uint8_t));
   // bitVector
-  uint8_t bitVector_size = static_cast<uint8_t>(*pos);
-  pos += sizeof(uint8_t);
-  std::vector<uint64_t> bitVector(bitVector_size);
-  for (size_t i = 0; i < bitVector_size; ++i) {
-    bitVector[i] = DecodeFixed64(pos);
-    pos += sizeof(uint64_t);
-  }
-
-  // rankprefix
-  uint8_t rankPrefix_size = static_cast<uint8_t>(*pos);
-  pos += sizeof(uint8_t);
-  std::vector<uint8_t> rankPrefix(rankPrefix_size);
-  for (size_t i = 0; i < rankPrefix_size; ++i) {
-    rankPrefix[i] = static_cast<uint8_t>(*pos);
-    pos += sizeof(uint8_t);
-  }
-
+  bv_size_ = static_cast<uint8_t>(*pos);
+  pos = pos + sizeof(uint8_t) + bv_size_ * sizeof(uint64_t);
+  bitVector_offset_ = level_offset_ + level_capacity_size_ * sizeof(uint8_t) + sizeof(uint8_t);
   // values_
-  uint8_t values_size = static_cast<uint8_t>(*pos);
-  pos += sizeof(uint8_t);
-  std::vector<uint8_t> values(values_size);
-  for (size_t i = 0; i < values_size; ++i) {
-    values[i] = static_cast<uint8_t>(*pos);
-    pos += sizeof(uint8_t);
-  }
+  values_size_ = static_cast<uint8_t>(*pos);
+  pos = pos + sizeof(uint8_t) + values_size_ * sizeof(uint8_t);
+  value_offset_ = bitVector_offset_ + bv_size_ * sizeof(uint64_t) + sizeof(uint8_t);
+
   assert(static_cast<uint32_t>(pos - mph_start) == mph_index_size_);
 
-  // construct BitVector and MPH from deserialized data
-  auto bv = std::make_unique<BitVector>(std::move(bitVector), std::move(rankPrefix));
-  mph_ = std::make_unique<MPH>(std::move(level_capacity), std::move(values), std::move(bv));
   *map_offset = static_cast<uint16_t>(size - sizeof(uint32_t) - mph_index_size_);
   // {
   //   FILE* debug_file = fopen("debugread1124.txt", "a");
@@ -181,15 +160,37 @@ void DataBlockMPHIndex::Initialize(const char* data, uint32_t size,
   // }
 }
 
-uint8_t DataBlockMPHIndex::Lookup(const Slice& key) const {
-  return mph_->get(key);
+uint8_t DataBlockMPHIndex::Lookup(const char* data, const Slice& key) const {
+  size_t pos = 0;
+  const uint8_t* level_capacity = reinterpret_cast<const uint8_t*>(data + level_offset_);
+  const uint64_t* bit_vector = reinterpret_cast<const uint64_t*>(data + bitVector_offset_);
+  const uint8_t* values = reinterpret_cast<const uint8_t*>(data + value_offset_);
+
+  for (size_t level = 0; level < level_capacity_size_; ++level) {
+    uint64_t seed = (level + 1) * kSeedJump;
+    uint8_t cap = level_capacity[level];
+    auto h = GetSliceHash64(key, seed) % cap;
+
+    // Check bit at position (pos + h) in bit_vector
+    size_t bit_pos = pos + h;
+    size_t block_idx = bit_pos >> 6; // divide by 64
+    uint64_t mask = (1ULL << (bit_pos & 63)) - 1;
+
+    if ((bit_vector[block_idx] & mask) != 0 ) {
+      size_t rank = 0;
+      for (size_t i = 0; i < block_idx; i++) {
+        rank += popcount(bit_vector[i]);
+      }
+      rank += popcount(bit_vector[block_idx] & mask);
+
+      return values[rank];
+    }
+    pos += cap;
+  }
+  return {};
 }
 
 // =============== BitVector ===============
-inline int popcount(uint64_t x) {
-  return __builtin_popcountll(x);  // GCC/Clang builtin
-}
-
 BitVector::BitVector(const std::vector<bool>& v) {
   // set bitVector
   bitVector.assign((v.size() + 63) / 64, 0);
@@ -201,13 +202,13 @@ BitVector::BitVector(const std::vector<bool>& v) {
       }
   }
   // set rankPrefix with an extra element for convenience
-  rankPrefix.resize(bitVector.size() + 1);
-  size_t sum = 0;
-  rankPrefix[0] = 0;
-  for (size_t i = 0; i < bitVector.size(); ++i) {
-      sum += popcount(bitVector[i]);
-      rankPrefix[i + 1] = sum;
-  }
+  // rankPrefix.resize(bitVector.size() + 1);
+  // size_t sum = 0;
+  // rankPrefix[0] = 0;
+  // for (size_t i = 0; i < bitVector.size(); ++i) {
+  //     sum += popcount(bitVector[i]);
+  //     rankPrefix[i + 1] = sum;
+  // }
 }
 
 bool BitVector::get(size_t i) const {
@@ -218,7 +219,13 @@ bool BitVector::get(size_t i) const {
 size_t BitVector::rank(size_t i) const {
   size_t blockIdx = i >> 6;
   uint64_t mask = (1ULL << (i & 63)) - 1;
-  return rankPrefix[blockIdx] + popcount(bitVector[blockIdx] & mask);
+  size_t rank = 0;
+
+  for (size_t b = 0; b < blockIdx ; b++) {
+    rank += popcount(bitVector[b]);
+  }
+  rank += popcount(bitVector[blockIdx] & mask);
+  return rank;
 }
 // =============== MPH ===============
 MPH::MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs) {
@@ -273,24 +280,24 @@ MPH::MPH(const std::vector<std::pair<std::string, uint8_t>>& kvs) {
   bitVector_ = std::make_unique<BitVector>(bitVectorInput);
 }
 
-MPH::MPH(std::vector<uint8_t> level_capacity,
-    std::vector<uint8_t> values,
-    std::unique_ptr<BitVector> bitVector)
-    : level_capacity_(std::move(level_capacity)),
-      values_(std::move(values)),
-      bitVector_(std::move(bitVector)) {}
-uint8_t MPH::get(const Slice& key) {
-  size_t pos = 0;
-  for (size_t level = 0; level < level_capacity_.size(); ++level) {
-    uint64_t seed = (level + 1) * kSeedJump;
-    auto h = GetSliceHash64(key, seed) % level_capacity_[level];
+// MPH::MPH(std::vector<uint8_t> level_capacity,
+//     std::vector<uint8_t> values,
+//     std::unique_ptr<BitVector> bitVector)
+//     : level_capacity_(std::move(level_capacity)),
+//       values_(std::move(values)),
+//       bitVector_(std::move(bitVector)) {}
+// uint8_t MPH::get(const Slice& key) {
+//   size_t pos = 0;
+//   for (size_t level = 0; level < level_capacity_.size(); ++level) {
+//     uint64_t seed = (level + 1) * kSeedJump;
+//     auto h = GetSliceHash64(key, seed) % level_capacity_[level];
 
-    if (bitVector_->get(pos + h)) {
-        size_t rank = bitVector_->rank(pos + h);
-        return values_[rank];
-    }
-    pos += level_capacity_[level];
-  }
-  return {};
-}
+//     if (bitVector_->get(pos + h)) {
+//         size_t rank = bitVector_->rank(pos + h);
+//         return values_[rank];
+//     }
+//     pos += level_capacity_[level];
+//   }
+//   return {};
+// }
 }  // namespace ROCKSDB_NAMESPACE
