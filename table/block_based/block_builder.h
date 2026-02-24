@@ -15,6 +15,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/table.h"
 #include "table/block_based/data_block_hash_index.h"
+#include "table/block_based/data_block_mph_index.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -69,9 +70,13 @@ class BlockBuilder {
   // Returns an estimate of the current (uncompressed) size of the block
   // we are building.
   inline size_t CurrentSizeEstimate() const {
-    return estimate_ + (data_block_hash_index_builder_.Valid()
-                            ? data_block_hash_index_builder_.EstimateSize()
-                            : 0);
+    return estimate_ + 
+          (data_block_hash_index_builder_.Valid()
+                ? data_block_hash_index_builder_.EstimateSize()
+                : 0) + 
+          (data_block_mph_index_builder_.Valid()
+                ? data_block_mph_index_builder_.EstimateSize()
+                : 0);
   }
 
   // Returns an estimated block size after appending key and value.
@@ -120,6 +125,7 @@ class BlockBuilder {
   bool finished_;  // Has Finish() been called?
   std::string last_key_;
   DataBlockHashIndexBuilder data_block_hash_index_builder_;
+  DataBlockMPHIndexBuilder data_block_mph_index_builder_;
 #ifndef NDEBUG
   bool add_with_last_key_called_ = false;
 #endif

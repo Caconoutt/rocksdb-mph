@@ -24,10 +24,12 @@
 #include "rocksdb/table.h"
 #include "table/block_based/block_prefix_index.h"
 #include "table/block_based/data_block_hash_index.h"
+#include "table/block_based/data_block_mph_index.h"
 #include "table/format.h"
 #include "table/internal_iterator.h"
 #include "test_util/sync_point.h"
 #include "util/random.h"
+#include <inttypes.h>
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -286,6 +288,7 @@ class Block {
   uint32_t block_restart_interval_{0};
   uint8_t protection_bytes_per_key_{0};
   DataBlockHashIndex data_block_hash_index_;
+  DataBlockMPHIndex data_block_mph_index_;
 };
 
 // A `BlockIter` iterates over the entries in a `Block`'s data buffer. The
@@ -691,6 +694,7 @@ class DataBlockIter final : public BlockIter<Slice> {
                   bool block_contents_pinned,
                   bool user_defined_timestamps_persisted,
                   DataBlockHashIndex* data_block_hash_index,
+                  DataBlockMPHIndex* data_block_mph_index,
                   uint8_t protection_bytes_per_key, const char* kv_checksum,
                   uint32_t block_restart_interval) {
     InitializeBase(raw_ucmp, data, restarts, num_restarts, global_seqno,
@@ -701,6 +705,7 @@ class DataBlockIter final : public BlockIter<Slice> {
     read_amp_bitmap_ = read_amp_bitmap;
     last_bitmap_offset_ = current_ + 1;
     data_block_hash_index_ = data_block_hash_index;
+    data_block_mph_index_ = data_block_mph_index;
   }
 
   Slice value() const override {
@@ -719,14 +724,43 @@ class DataBlockIter final : public BlockIter<Slice> {
 #ifndef NDEBUG
     if (TEST_Corrupt_Callback("DataBlockIter::SeekForGet")) return true;
 #endif
-    if (!data_block_hash_index_) {
+    if (data_block_hash_index_) {
+      // uint64_t start = rocksdb::Env::Default()->NowNanos();
+      bool res = SeekForGetImpl(target);
+      // uint64_t end = rocksdb::Env::Default()->NowNanos();
+      // // === file write ===
+      // {
+      //   FILE* hash_file = fopen("hash_seekforget_.txt", "a");
+      //   if (hash_file != nullptr) {
+      //     uint64_t elapsed_ns = end - start;
+      //     fprintf(hash_file, "Elapsed: %" PRIu64 " nanoseconds\n", elapsed_ns);
+      //     fflush(hash_file);
+      //     fclose(hash_file);
+      //   }
+      // }
+      UpdateKey();
+      return res;
+    } else if (data_block_mph_index_) {
+      // uint64_t start = rocksdb::Env::Default()->NowNanos();
+      bool res = SeekForGetMPHImpl(target);
+      // uint64_t end = rocksdb::Env::Default()->NowNanos();
+      // // === file write ===
+      // {
+      //   FILE* mph_file = fopen("mph_seekforget_.txt", "a");
+      //   if (mph_file != nullptr) {
+
+      //   fprintf(mph_file, "Elapsed: %" PRIu64 " microseconds\n", end - start);
+      //   fflush(mph_file);
+      //   fclose(mph_file);
+      //   }
+      // }
+      UpdateKey();
+      return res;
+    } else {
       SeekImpl(target);
       UpdateKey();
       return true;
     }
-    bool res = SeekForGetImpl(target);
-    UpdateKey();
-    return res;
   }
 
   void Invalidate(const Status& s) override {
@@ -777,8 +811,10 @@ class DataBlockIter final : public BlockIter<Slice> {
   int32_t prev_entries_idx_ = -1;
 
   DataBlockHashIndex* data_block_hash_index_;
+  DataBlockMPHIndex* data_block_mph_index_;
 
   bool SeekForGetImpl(const Slice& target);
+  bool SeekForGetMPHImpl(const Slice& target);
 };
 
 // Iterator over MetaBlocks.  MetaBlocks are similar to Data Blocks and

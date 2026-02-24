@@ -732,6 +732,11 @@ DEFINE_bool(use_data_block_hash_index, false,
             "instead of kDataBlockBinarySearch. "
             "This is valid if only we use BlockTable");
 
+DEFINE_bool(use_data_block_mph_index, false,
+            "if use kDataBlockBinaryAndMPHash "
+            "instead of kDataBlockBinarySearch. "
+            "This is valid if only we use BlockTable");
+
 DEFINE_double(data_block_hash_table_util_ratio, 0.75,
               "util ratio for data block hash index table. "
               "This is only valid if use_data_block_hash_index is "
@@ -4557,7 +4562,11 @@ class Benchmark {
           fprintf(stderr, "Unknown prepopulate block cache mode\n");
       }
       block_based_options.prepopulate_block_cache = prepopulate_block_cache;
-      if (FLAGS_use_data_block_hash_index) {
+      if (FLAGS_use_data_block_mph_index) {
+        block_based_options.data_block_index_type =
+            ROCKSDB_NAMESPACE::BlockBasedTableOptions::kDataBlockBinaryAndMPHash;
+      }
+      else if (FLAGS_use_data_block_hash_index) {
         block_based_options.data_block_index_type =
             ROCKSDB_NAMESPACE::BlockBasedTableOptions::kDataBlockBinaryAndHash;
       } else {
